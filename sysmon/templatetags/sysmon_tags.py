@@ -39,6 +39,7 @@ def tofloat(value):
     except ValueError:
         return 0
 
+
 register.filter(name='tofloat', filter_func=tofloat)
 
 
@@ -63,15 +64,20 @@ class SysMon(template.Node):
         # disk
         partitions = list()
         for part in pu.disk_partitions():
+            try:
+                disk_usage_total = bytes2human(pu.disk_usage(part.mountpoint).total)
+                usage_percentage = intcomma(pu.disk_usage(part.mountpoint).percent,
+                                            use_l10n=False)
+            except:
+                disk_usage_total = "n/a"
+                usage_percentage = "n/a"
             partitions.append(
                 diskPartTuple(
                     device=part.device,
                     mountpoint=part.mountpoint,
                     fstype=part.fstype,
-                    total=bytes2human(
-                        pu.disk_usage(part.mountpoint).total),
-                    percent=intcomma(pu.disk_usage(part.mountpoint).percent,
-                                     use_l10n=False)
+                    total=disk_usage_total,
+                    percent=usage_percentage
                 )
             )
 
@@ -96,16 +102,22 @@ class SysMon(template.Node):
 
             try:
                 percent = process.get_memory_percent()
+                process_name = process.name()
+                process_username = process.username()
             except AccessDenied:
                 percent = "Access Denied"
+                process_name = "Access Denied"
+                process_username = "Access Denied"
             else:
                 percent = int(percent)
+                #process_name = "Access Denied"
+                #process_username = "Access Denied"
 
             processes.append(processTuple(
                 pid=process.pid,
-                name=process.name,
+                name=process_name,
                 status=process.status,
-                user=process.username,
+                user=process_username,
                 memory=percent))
 
         processes_sorted = sorted(
